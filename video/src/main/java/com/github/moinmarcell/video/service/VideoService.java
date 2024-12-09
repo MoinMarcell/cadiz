@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Objects;
 
 import static org.springframework.data.mongodb.core.query.Query.query;
@@ -39,12 +40,18 @@ public class VideoService {
 		}
 	}
 
-	public byte[] getVideo(String filename) throws IOException {
+	public Map<String, Object> getVideo(String filename) {
 		GridFSFile gridFSFile = gridFsTemplate.findOne(query(whereFilename().is(filename)));
+		if (Objects.isNull(gridFSFile)) {
+			throw new IllegalArgumentException("No video found with filename: " + filename);
+		}
 
 		GridFsResource resource = gridFsTemplate.getResource(gridFSFile);
 
-		return resource.getInputStream().readAllBytes();
+		return Map.of(
+				"content", resource,
+				"contentType", resource.getContentType()
+		);
 	}
 
 	private boolean isVideoMp4(MultipartFile file) {
